@@ -1,4 +1,7 @@
-use crate::models::cli::{self, Command};
+use crate::models::{
+    cli::{self},
+    command::Command,
+};
 pub struct ShellPlugin;
 
 impl cli::CLIPlugin for ShellPlugin {

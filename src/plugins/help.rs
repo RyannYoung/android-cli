@@ -1,6 +1,9 @@
 use colored::Colorize;
 
-use crate::models::cli::{self, CLIPlugin, Command};
+use crate::models::{
+    cli::{self, CLIPlugin},
+    command::Command,
+};
 use std::fmt::Write;
 
 pub struct HelpPlugin;

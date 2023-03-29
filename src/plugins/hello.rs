@@ -1,5 +1,5 @@
 /// A basic representation on how to implement a plugin
-use crate::models::cli::{self, Command};
+use crate::models::{cli, command::Command};
 
 pub struct HelloPlugin;
 

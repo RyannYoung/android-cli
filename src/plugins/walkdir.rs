@@ -1,4 +1,7 @@
-use crate::models::cli::{self, CLIPlugin, Command};
+use crate::models::{
+    cli::{self, CLIPlugin},
+    command::Command,
+};
 
 pub struct Walkdir;
 

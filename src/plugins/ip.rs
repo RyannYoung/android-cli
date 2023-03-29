@@ -1,4 +1,4 @@
-use crate::models::cli::{CLIPlugin, Command};
+use crate::models::{cli::CLIPlugin, command::Command};
 use colored::Colorize;
 use std::fmt::Write;
 use sysinfo::{NetworkExt, System, SystemExt};
