@@ -10,10 +10,12 @@ use std::fmt::Write;
 use android_cli::{init_tcp, parse_args, split_stream};
 use ascii::{get_header, get_summary};
 use colored::Colorize;
-use models::Cli::CLI;
+use models::cli::{Cli, ParseResult};
 use plugins::{
-    hello::HelloPlugin, help::HelpPlugin, ip::IpPlugin, shell::ShellPlugin, walkdir::Walkdir, sysinfo::SysInfoPlugin,
+    hello::HelloPlugin, help::HelpPlugin, ip::IpPlugin, shell::ShellPlugin, sysinfo::SysInfoPlugin,
+    walkdir::Walkdir,
 };
+
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 
 #[tokio::main]
@@ -28,11 +30,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (mut reader, mut writer) = split_stream(&mut stream);
 
     // Print the header
-    writer.write(get_header().as_bytes()).await?;
-    writer.write(get_summary().as_bytes()).await?;
+    writer.write_all(get_header().as_bytes()).await?;
+    writer.write_all(get_summary().as_bytes()).await?;
 
     // Load the CLI utility and it's plugins
-    let mut cli = CLI::new();
+    let mut cli = Cli::new();
     cli.load_plugin(HelloPlugin);
     cli.load_plugin(ShellPlugin);
     cli.load_plugin(IpPlugin);
@@ -47,26 +49,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Read an incoming command
         let mut line = String::new();
 
-        writer.write(format!("{}", "CLI /> ".dimmed().bold()).as_bytes()).await?;
+        writer
+            .write_all(format!("{}", "CLI /> ".dimmed().bold()).as_bytes())
+            .await?;
 
         reader.read_line(&mut line).await?;
+        let cmd = line.split_whitespace().collect::<Vec<_>>()[0].to_owned();
 
         // Parse the command
-        let command = CLI::parse_command(line);
-
-        if command.is_empty() {
-            continue;
-        }
-
-        // Filter out the command and args
-        let cmd = &command[0];
-        let args = &command[1..];
+        let args = match cli.parse_command(line) {
+            ParseResult::Success(result) => match result {
+                Some(args) => args,
+                None => {
+                    writer
+                        .write_all("\nUnable to resolve plugin args\n\n".as_bytes())
+                        .await?;
+                    continue;
+                }
+            },
+            ParseResult::Fail(error) => {
+                writer
+                    .write_all(format!("\n{}\n", error).as_bytes())
+                    .await?;
+                continue;
+            }
+        };
 
         let mut output = String::new();
 
         let res = cli.run_command(cmd, args);
         writeln!(&mut output, "\n{res}\n")?;
 
-        writer.write(output.as_bytes()).await?;
+        writer.write_all(output.as_bytes()).await?;
     }
 }

@@ -1,25 +1,22 @@
-use crate::models::Cli::{CLIPlugin, Command};
+use crate::models::cli::{self, CLIPlugin, Command};
 
 pub struct Walkdir;
 
 impl CLIPlugin for Walkdir {
-    fn register_commands(&self, cli: &mut crate::models::Cli::CLI) {
-        let command = Command::new("walkdir")
-            .description("A filesystem directory walker")
-            .action(|args| {
-                let target_path = match args.len() {
-                    1.. => args[0].clone(),
-                    0 | _ => String::from("."),
-                };
-                let paths: Vec<String> = walkdir::WalkDir::new(target_path)
-                    .into_iter()
-                    .filter_map(|v| v.ok())
-                    .map(|x| x.path().to_str().unwrap().to_owned())
-                    .collect();
+    fn register_command(&self, _cli: &mut cli::Cli) -> Command {
+        Command::new("walkdir").action(|args| {
+            let target_path = args.get_one::<String>("path").unwrap();
+            let paths: Vec<String> = walkdir::WalkDir::new(target_path)
+                .into_iter()
+                .filter_map(|v| v.ok())
+                .map(|x| x.path().to_str().unwrap().to_owned())
+                .collect();
 
-                paths.join("\n")
-            });
+            paths.join("\n")
+        })
+    }
 
-        cli.add_command(command);
+    fn register_argument_parser(&self) -> clap::Command {
+        clap::Command::new("walkdir").arg(clap::arg!([path]).required(true))
     }
 }

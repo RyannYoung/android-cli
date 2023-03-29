@@ -1,35 +1,35 @@
-use crate::models::Cli::{self, Command};
-
+use crate::models::cli::{self, Command};
 pub struct ShellPlugin;
 
-impl Cli::CLIPlugin for ShellPlugin {
-    fn register_commands(&self, cli: &mut Cli::CLI) {
-        let command = Command::new("shell")
-            .description("Run shell commands")
-            .action(|args| {
-                // Guard if no args are supplied
-                if args.is_empty() {
-                    return "You need to supply command arguments".to_string();
-                }
+impl cli::CLIPlugin for ShellPlugin {
+    fn register_command(&self, _cli: &mut cli::Cli) -> Command {
+        Command::new("shell").action(|args| {
+            let args: Vec<String> = args
+                .get_raw("commands")
+                .unwrap()
+                .map(|os| os.to_str().unwrap().to_string())
+                .collect();
 
-                let args = get_command_args(args);
-                let output = std::process::Command::new(get_shell_environment())
-                    .args(args)
-                    .output()
-                    .unwrap();
+            let args = get_command_args(args.as_slice());
 
-                // Generate the stdout and stderr
-                let stdout = std::str::from_utf8(&output.stdout).unwrap();
-                let stderr = std::str::from_utf8(&output.stderr).unwrap();
+            let output = std::process::Command::new(get_shell_environment())
+                .args(args)
+                .output()
+                .unwrap();
 
-                // This is bad but I'm doing it anyway (adds a new line in between)
-                let host_output: Vec<&str> = vec![stdout, stderr];
-                let host_output = host_output.join("\n");
+            // Generate the stdout and stderr
+            let stdout = std::str::from_utf8(&output.stdout).unwrap();
+            let stderr = std::str::from_utf8(&output.stderr).unwrap();
 
-                host_output
-            });
+            // This is bad but I'm doing it anyway (adds a new line in between)
+            let host_output: Vec<&str> = vec![stdout, stderr];
 
-        cli.add_command(command);
+            host_output.join("\n")
+        })
+    }
+
+    fn register_argument_parser(&self) -> clap::Command {
+        clap::Command::new("shell").arg(clap::arg!([commands] ...))
     }
 }
 

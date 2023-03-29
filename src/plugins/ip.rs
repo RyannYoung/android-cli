@@ -1,64 +1,48 @@
+use crate::models::cli::{CLIPlugin, Command};
 use colored::Colorize;
-
-use crate::models::Cli::{CLIPlugin, Command};
-
+use std::fmt::Write;
+use sysinfo::{NetworkExt, System, SystemExt};
 pub struct IpPlugin;
 
 impl CLIPlugin for IpPlugin {
-    fn register_commands(&self, cli: &mut crate::models::Cli::CLI) {
-        let command = Command::new("ip")
-            .description("Show network information of target")
-            .action(|_args| match cfg!(target_os = "windows") {
-                true => get_windows(),
-                false => get_unix(),
-            });
-        cli.add_command(command);
+    fn register_command(&self, _cli: &mut crate::models::cli::Cli) -> Command {
+        Command::new("ip").action(|_args| {
+            // Output buffer
+            let mut output = String::new();
+
+            // Create a sys object with nothing loaded
+            let mut sys = System::new();
+
+            // First we update all information of our `System` struct.
+            sys.refresh_networks_list();
+            sys.refresh_networks();
+
+            // Write the header
+            writeln!(&mut output, "{}", "IP Config".underline().bold()).unwrap();
+
+            for (interface, data) in sys.networks() {
+                let mac = &data.mac_address();
+                let incoming_mb = bytes_to_mb(&data.total_received());
+                let outgoing_mb = bytes_to_mb(&data.total_transmitted());
+
+                writeln!(
+                    &mut output,
+                    "  {:<15} [{}] {:.2}/{:.2} in/out Mbs",
+                    interface, mac, incoming_mb, outgoing_mb
+                )
+                .unwrap();
+            }
+
+            output
+        })
+    }
+
+    fn register_argument_parser(&self) -> clap::Command {
+        clap::Command::new("ip")
     }
 }
 
-fn get_windows() -> String {
-    let adapters = ipconfig::get_adapters().unwrap();
-
-    let adapter_output = adapters
-        .iter()
-        .map(|adapter| {
-            let mut adapter_output = String::new();
-
-            // Collect information about the adapter
-            let adapter_name = adapter.friendly_name();
-            let ip_addrs = adapter.ip_addresses();
-
-            // Construct the output string for the adapter
-            let adapter_name = format!("{}", adapter_name.underline().bold());
-            let ip_addrs = ip_addrs
-                .iter()
-                .map(|ip| {
-                    format!(
-                        "{:>4}: {}",
-                        match ip.is_ipv4() {
-                            true => "v4",
-                            false => match ip.is_ipv6() {
-                                true => "v6",
-                                false => "v?",
-                            },
-                        },
-                        ip.to_string()
-                    )
-                })
-                .collect::<Vec<_>>()
-                .join("\n");
-            adapter_output.push_str(&adapter_name);
-            adapter_output.push_str("\n");
-            adapter_output.push_str(&ip_addrs);
-
-            adapter_output
-        })
-        .collect::<Vec<_>>()
-        .join("\n\n");
-
-    adapter_output
-}
-
-fn get_unix() -> String {
-    todo!()
+// Converts bytes to gb
+fn bytes_to_mb(bytes: &u64) -> f64 {
+    (*bytes as f64) / (1024.0 * 1024.0)
 }

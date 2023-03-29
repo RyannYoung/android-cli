@@ -27,7 +27,7 @@ pub fn parse_args() -> (String, u16) {
     let args = Args::parse();
     let Args { ip, port } = args;
 
-    return (ip, port);
+    (ip, port)
 }
 
 /// Initialises the TCP connection
