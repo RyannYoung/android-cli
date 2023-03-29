@@ -1,60 +1,113 @@
+use crate::models::Cli::{CLIPlugin, Command};
+use std::fmt::Write;
+
+use colored::Colorize;
 /// System configuration information module
 /// Extracts information about the target system
+use sysinfo::{Cpu, CpuExt, Disk, DiskExt, NetworkExt, ProcessExt, System, SystemExt};
 
-pub fn run(args: Vec<&str>) -> String {
-    use sysinfo::{NetworkExt, ProcessExt, System, SystemExt};
+pub struct SysInfoPlugin;
 
-    // Please note that we use "new_all" to ensure that all list of
-    // components, network interfaces, disks and users are already
-    // filled!
-    let mut sys = System::new_all();
+impl CLIPlugin for SysInfoPlugin {
+    fn register_commands(&self, cli: &mut crate::models::Cli::CLI) {
+        let command = Command::new("sysinfo")
+            .description("Print various system information")
+            .action(|_args| {
+                let mut output = String::new();
 
-    // First we update all information of our `System` struct.
-    sys.refresh_all();
+                // Update all the information to the `System` struct
+                let mut sys = System::new_all();
+                sys.refresh_all();
 
-    // We display all disks' information:
-    println!("=> disks:");
-    for disk in sys.disks() {
-        println!("{:?}", disk);
+                // Disk Information
+                write!(&mut output, "{}\n", "Disks".underline().bold()).unwrap();
+                sys.disks().iter().for_each(|disk| {
+                    let name = &disk.name().to_str().unwrap();
+                    let available_space = &disk.available_space();
+                    let total_space = &disk.total_space();
+                    let mount_point = &disk.mount_point().to_str().unwrap();
+
+                    writeln!(
+                        &mut output,
+                        "  {} [{:.2}/{:.2}GB]",
+                        mount_point,
+                        bytes_to_gb(total_space - available_space),
+                        bytes_to_gb(total_space.to_owned()),
+                    )
+                    .unwrap()
+                });
+
+                // RAM and Swap
+                write!(&mut output, "\n{}\n", "Memory".underline().bold()).unwrap();
+                writeln!(&mut output, "  Total Memory:    {}", sys.total_memory()).unwrap();
+                writeln!(&mut output, "  Used Memory:     {}", sys.used_memory()).unwrap();
+                writeln!(&mut output, "  Total Swap:      {}", sys.total_swap()).unwrap();
+                writeln!(&mut output, "  Used Swap:       {}", sys.used_swap()).unwrap();
+
+                // System information
+                write!(
+                    &mut output,
+                    "\n{}\n",
+                    "System Information".underline().bold()
+                )
+                .unwrap();
+                writeln!(&mut output, "  System name:     {:?}", sys.name().unwrap()).unwrap();
+                writeln!(
+                    &mut output,
+                    "  Kernel version:  {:?}",
+                    sys.kernel_version().unwrap()
+                )
+                .unwrap();
+                writeln!(
+                    &mut output,
+                    "  OS version:      {:?}",
+                    sys.os_version().unwrap()
+                )
+                .unwrap();
+                writeln!(
+                    &mut output,
+                    "  Host name:       {:?}",
+                    sys.host_name().unwrap()
+                )
+                .unwrap();
+
+                // CPU
+                write!(&mut output, "\n{}\n", "CPU".underline().bold()).unwrap();
+                sys.cpus().iter().for_each(|cpu| {
+                    let brand = &cpu.brand();
+                    let name = &cpu.name();
+                    let vendor_id = &cpu.vendor_id();
+                    let usage = &cpu.cpu_usage();
+
+                    writeln!(
+                        &mut output,
+                        "  {} [{} / {}] - Usage: {:.2}%",
+                        name, brand, vendor_id, usage
+                    )
+                    .unwrap()
+                });
+
+                // Processes
+                write!(&mut output, "\n{}\n", "Processes".underline().bold()).unwrap();
+                for (pid, process) in sys.processes() {
+                    writeln!(
+                        &mut output,
+                        "  [{}] {} ({:.2})",
+                        pid,
+                        process.name(),
+                        process.run_time()
+                    )
+                    .unwrap();
+                }
+
+                output
+            });
+
+        cli.add_command(command)
     }
+}
 
-    // Network interfaces name, data received and data transmitted:
-    println!("=> networks:");
-    for (interface_name, data) in sys.networks() {
-        println!(
-            "{}: {}/{} B",
-            interface_name,
-            data.received(),
-            data.transmitted()
-        );
-    }
-
-    // Components temperature:
-    println!("=> components:");
-    for component in sys.components() {
-        println!("{:?}", component);
-    }
-
-    println!("=> system:");
-    // RAM and swap information:
-    println!("total memory: {} bytes", sys.total_memory());
-    println!("used memory : {} bytes", sys.used_memory());
-    println!("total swap  : {} bytes", sys.total_swap());
-    println!("used swap   : {} bytes", sys.used_swap());
-
-    // Display system information:
-    println!("System name:             {:?}", sys.name());
-    println!("System kernel version:   {:?}", sys.kernel_version());
-    println!("System OS version:       {:?}", sys.os_version());
-    println!("System host name:        {:?}", sys.host_name());
-
-    // Number of CPUs:
-    println!("NB CPUs: {}", sys.cpus().len());
-
-    // Display processes ID, name na disk usage:
-    for (pid, process) in sys.processes() {
-        println!("[{}] {} {:?}", pid, process.name(), process.disk_usage());
-    }
-
-    String::from("Okey")
+// Converts bytes to gb
+fn bytes_to_gb(bytes: u64) -> f64 {
+    (bytes as f64) / (1024.0 * 1024.0 * 1024.0)
 }

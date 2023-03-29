@@ -9,9 +9,10 @@ use std::fmt::Write;
 
 use android_cli::{init_tcp, parse_args, split_stream};
 use ascii::{get_header, get_summary};
+use colored::Colorize;
 use models::Cli::CLI;
 use plugins::{
-    hello::HelloPlugin, help::HelpPlugin, ip::IpPlugin, shell::ShellPlugin, walkdir::Walkdir,
+    hello::HelloPlugin, help::HelpPlugin, ip::IpPlugin, shell::ShellPlugin, walkdir::Walkdir, sysinfo::SysInfoPlugin,
 };
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 
@@ -35,6 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     cli.load_plugin(HelloPlugin);
     cli.load_plugin(ShellPlugin);
     cli.load_plugin(IpPlugin);
+    cli.load_plugin(SysInfoPlugin);
     cli.load_plugin(Walkdir);
 
     // Load help last (generates help information for each element)
@@ -45,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Read an incoming command
         let mut line = String::new();
 
-        writer.write(format!("Execute /> ").as_bytes()).await?;
+        writer.write(format!("{}", "CLI /> ".dimmed().bold()).as_bytes()).await?;
 
         reader.read_line(&mut line).await?;
 

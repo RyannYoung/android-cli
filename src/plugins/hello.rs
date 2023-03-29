@@ -7,17 +7,21 @@ impl Cli::CLIPlugin for HelloPlugin {
     fn register_commands(&self, cli: &mut Cli::CLI) {
         let command = Command::new("hello")
             .description("A basic example of a hello plugin")
-            .long_description("This is a long descriptoin")
+            .long_description("This is a long description")
             .action(|args| {
-                let clap_command = clap::Command::new("Unknown")
-                    .version("1.0")
-                    .author("Ryan Young")
-                    .arg(clap::arg!(--two <VALUE>).required(true))
-                    .get_matches_from(args);
+                let mut clap_args = args.to_owned();
+                clap_args.insert(0, "hello".to_string());
 
-                println!("{:?}", clap_command);
+                // Generate and match a clap command
+                let matches = match clap::Command::new("hello")
+                    .arg(clap::arg!([echo]).index(1).required(true))
+                    .try_get_matches_from_mut(clap_args)
+                {
+                    Ok(matches) => matches,
+                    Err(error) => return error.to_string(),
+                };
 
-                "Hello".into()
+                matches.get_one::<String>("echo").unwrap().to_string()
             });
 
         cli.add_command(command);

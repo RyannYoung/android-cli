@@ -1,5 +1,3 @@
-use std::str::from_utf8;
-
 use crate::models::Cli::{self, Command};
 
 pub struct ShellPlugin;
@@ -9,10 +7,9 @@ impl Cli::CLIPlugin for ShellPlugin {
         let command = Command::new("shell")
             .description("Run shell commands")
             .action(|args| {
-
                 // Guard if no args are supplied
                 if args.is_empty() {
-                    return "You need to supply command arguments".to_string()
+                    return "You need to supply command arguments".to_string();
                 }
 
                 let args = get_command_args(args);
