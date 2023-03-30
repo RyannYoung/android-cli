@@ -33,6 +33,9 @@ impl CLIPlugin for IpPlugin {
                 .unwrap();
             }
 
+            // TODO: Update to include network addrs
+            writeln!(&mut output, "{}", "\nThis plugin currently doesn't support IP addrs - will be updated in the near future".bold().yellow().underline()).unwrap();
+
             output
         })
     }

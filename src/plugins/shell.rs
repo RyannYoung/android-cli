@@ -7,6 +7,10 @@ pub struct ShellPlugin;
 impl cli::CLIPlugin for ShellPlugin {
     fn register_command(&self, _cli: &mut cli::Cli) -> Command {
         Command::new("shell").action(|args| {
+            if !args.args_present() {
+                return String::from("No arguments were present for the shell");
+            }
+
             let args: Vec<String> = args
                 .get_raw("commands")
                 .unwrap()
@@ -21,8 +25,8 @@ impl cli::CLIPlugin for ShellPlugin {
                 .unwrap();
 
             // Generate the stdout and stderr
-            let stdout = std::str::from_utf8(&output.stdout).unwrap();
-            let stderr = std::str::from_utf8(&output.stderr).unwrap();
+            let stdout = std::str::from_utf8(&output.stdout).unwrap().trim();
+            let stderr = std::str::from_utf8(&output.stderr).unwrap().trim();
 
             // This is bad but I'm doing it anyway (adds a new line in between)
             let host_output: Vec<&str> = vec![stdout, stderr];
@@ -32,7 +36,7 @@ impl cli::CLIPlugin for ShellPlugin {
     }
 
     fn register_argument_parser(&self) -> clap::Command {
-        clap::Command::new("shell").arg(clap::arg!([commands] ...))
+        clap::Command::new("shell").arg(clap::arg!([commands]...).allow_hyphen_values(true))
     }
 }
 

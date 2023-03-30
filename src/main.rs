@@ -1,7 +1,6 @@
 mod ascii;
 /// A basic android CLI that lets you remotely interact with an Android device
 /// Author: Ryan Young
-mod commands;
 mod models;
 mod plugins;
 
@@ -12,8 +11,8 @@ use ascii::{get_header, get_summary};
 use colored::Colorize;
 use models::cli::{Cli, ParseResult};
 use plugins::{
-    hello::HelloPlugin, help::HelpPlugin, ip::IpPlugin, shell::ShellPlugin, sysinfo::SysInfoPlugin,
-    walkdir::Walkdir,
+    hello::HelloPlugin, help::HelpPlugin, ip::IpPlugin, pwd::PwdPlugin, shell::ShellPlugin,
+    sysinfo::SysInfoPlugin, walkdir::Walkdir,
 };
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
@@ -40,6 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     cli.load_plugin(IpPlugin);
     cli.load_plugin(SysInfoPlugin);
     cli.load_plugin(Walkdir);
+    cli.load_plugin(PwdPlugin);
 
     // Load help last (generates help information for each element)
     cli.load_plugin(HelpPlugin);
