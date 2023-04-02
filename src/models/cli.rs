@@ -2,8 +2,20 @@ use clap::ArgMatches;
 
 use super::command::Command;
 
+#[derive(Debug, Clone)]
+pub struct Config {
+    output: Option<Box<std::path::Path>>,
+}
+
+impl Config {
+    pub fn new() -> Self {
+        Self { output: None }
+    }
+}
+
 pub struct Cli {
     pub commands: Vec<Command>,
+    pub config: Config,
 }
 
 pub enum ParseResult {
@@ -16,6 +28,7 @@ impl Cli {
         // Create a base implementation
         Self {
             commands: Vec::new(),
+            config: Config::new(),
         }
     }
 

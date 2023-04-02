@@ -2,6 +2,8 @@ pub mod hello;
 pub mod help;
 pub mod ip;
 pub mod pwd;
+pub mod set;
 pub mod shell;
 pub mod sysinfo;
 pub mod walkdir;
+pub mod clipboard;

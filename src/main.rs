@@ -11,8 +11,8 @@ use ascii::{get_header, get_summary};
 use colored::Colorize;
 use models::cli::{Cli, ParseResult};
 use plugins::{
-    hello::HelloPlugin, help::HelpPlugin, ip::IpPlugin, pwd::PwdPlugin, shell::ShellPlugin,
-    sysinfo::SysInfoPlugin, walkdir::Walkdir,
+    clipboard::ClipboardPlugin, hello::HelloPlugin, help::HelpPlugin, ip::IpPlugin, pwd::PwdPlugin,
+    set::SetPlugin, shell::ShellPlugin, sysinfo::SysInfoPlugin, walkdir::Walkdir,
 };
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
@@ -40,6 +40,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     cli.load_plugin(SysInfoPlugin);
     cli.load_plugin(Walkdir);
     cli.load_plugin(PwdPlugin);
+    cli.load_plugin(SetPlugin);
+    cli.load_plugin(ClipboardPlugin);
 
     // Load help last (generates help information for each element)
     cli.load_plugin(HelpPlugin);
